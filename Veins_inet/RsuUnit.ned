@@ -22,16 +22,16 @@ import inet.linklayer.contract.IExternalInterface;
 module RsuUnit like INetworkNode
 {
     parameters:
-        bool hasStatus = default(false);
-        bool hasIpv4 = default(true);
-        bool hasIpv6 = default(false);
-        int numApps = default(0);
+        bool hasStatus = default(false); 
+        bool hasIpv4 = default(true); 	 
+        bool hasIpv6 = default(false);	 
+        int numApps = default(0);		 
         bool hasUdp = default(firstAvailableOrEmpty("Udp") != "");
         bool forwarding = default(false);
         bool multicastForwarding = default(false);
         *.forwarding = forwarding;
         *.multicastForwarding = multicastForwarding;
-        int numPcapRecorders = default(0);
+        int numPcap = default(0);
         int numVlan = default(0);
         int numWlan = default(0);
         int numPpp = default(0);
@@ -41,31 +41,30 @@ module RsuUnit like INetworkNode
         mobility.typename = default(numWlan > 0 ? "StationaryMobility" : "");
         *.interfaceTableModule = default(absPath(".interfaceTable"));
         wlan[*].radio.antenna.mobilityModule = default("^.^.^.mobility");
-        @display("bgb=511,553");
+        @display("bgb=738.582,567.026");
     gates:
         input radioIn[numWlan] @directIn;
         inout pppg[numPpp] @labels(PppFrame-conn) @allowUnconnected;
-        output DsrcOut[numApps] @directOut;
     submodules:
         status: NodeStatus if hasStatus {
             parameters:
-                @display("p=149,23;is=s");
+                @display("p=144.81999,25.622;is=s");
         }
-        pcapRecorder[numPcapRecorders]: PcapRecorder {
+        pcapRecorder[numPcap]: PcapRecorder {
             parameters:
-                @display("p=458,46;is=s");
+                @display("p=83.549995,170.442;is=s");
         }
         ipv4: <default("Ipv4NetworkLayer")> like INetworkLayer if hasIpv4 {
             parameters:
-                @display("p=365,308;q=queue");
+                @display("p=305.236,299.666;q=queue");
         }
         ipv6: <default("Ipv6NetworkLayer")> like INetworkLayer if hasIpv6 {
             parameters:
-                @display("p=419,347;q=queue");
+                @display("p=375.418,307.464;q=queue");
         }
         generic: <default("")> like INetworkLayer if hasGn {
             parameters:
-                @display("p=180,328;q=queue");
+                @display("p=160.416,290.754;q=queue");
         }
         app[numApps]: <> like IApp {                      //number of apps in application layer. defined the app
             parameters:
@@ -73,47 +72,47 @@ module RsuUnit like INetworkNode
         }
         apptrans: MessageDispatcher {					// dispatch message between application and transport layers
             parameters:
-                @display("p=249,114;b=379,15,,,,1");
+                @display("p=251.76399,113.628;b=315.262,14.481999,,,,1");
         }
         transnet: MessageDispatcher {					//dispatcher between transport layer and network layer
             parameters:
-                @display("p=253,271;b=387,12,,,,1");
+                @display("p=251.76399,249.536;b=315.262,11.139999,,,,1");
         }
         netlink: MessageDispatcher {
             parameters:
-                @display("p=253,378;b=387,9,,,,1");
+                @display("p=251.76399,369.848;b=315.262,15.596,,,,1");
         }
         udp: <default(firstAvailableOrEmpty("Udp"))> like IUdp if hasUdp {	//udp transport layer protocol
             parameters:
-                @display("p=365,186");
+                @display("p=331.972,170.442");
         }
         interfaceTable: InterfaceTable {
             parameters:
-                @display("p=59,23;is=s");
+                @display("p=57.927998,25.622;is=s");
         }
         wlan[numWlan]: <default("Ieee80211Interface")> like IWirelessInterface {
             parameters:
-                @display("p=80,486,row,150;q=queue");
+                @display("p=66.84,419.978,row,150;q=queue");
         }
         ppp[sizeof(pppg)]: <default("PppInterface")> like IPppInterface {
             parameters:
-                @display("p=203,486,row,150;q=txQueue");
+                @display("p=123.654,499.072,row,150;q=txQueue");
         }
-        ext[numExtInterfaces]: <default("ExtInterface")> like IExternalInterface {
+        ext[numExt]: <default("ExtInterface")> like IExternalInterface {
             parameters:
-                @display("p=1125,616,row,150;q=txQueue");
+                @display("p=249.536,463.42398,row,150;q=txQueue");
         }
-        tun[numTunInterfaces]: <default("TunInterface")> like ITunnelInterface {
+        tun[numTun]: <default("TunInterface")> like ITunnelInterface {
             parameters:
-                @display("p=975,616,row,150;q=txQueue");
+                @display("p=418.86398,432.232,row,150;q=txQueue");
         }
-        vlan[numVlanInterfaces]: <default("VlanInterface")> like IVlanInterface {
+        vlan[numVlan]: <default("VlanInterface")> like IVlanInterface {
             parameters:
-                @display("p=975,616,row,150;q=txQueue");
+                @display("p=375.418,516.896,row,150;q=txQueue");
         }
         mobility: <default("")> like IMobility if typename != "" {
             parameters:
-                @display("p=365,23;is=s");
+                @display("p=45.674,94.689995;is=s");
         }
     connections allowunconnected:
         ipv4.ifIn <-- netlink.out++ if hasIpv4;
@@ -143,12 +142,24 @@ module RsuUnit like INetworkNode
 
         for i=0..sizeof(radioIn)-1 {
             radioIn[i] --> { @display("m=s"); } --> wlan[i].radioIn;
+            wlan[i].upperLayerOut --> netlink.in++;
+            wlan[i].upperLayerIn <-- netlink.out++;
         }
         for i=0..sizeof(pppg)-1 {
             pppg[i] <--> { @display("m=s"); } <--> ppp[i].phys;
+            ppp[i].upperLayerOut --> netlink.in++;
+            ppp[i].upperLayerIn <-- netlink.out++;
         }
-        for i=0..sizeof(radioOut)-1 {
-            app[i].socketOut --> { @display("m=s"); } --> DsrcOut[i] ;
-            
+        for i=0..numExt-1 {
+            ext[i].upperLayerOut --> netlink.in++;
+            ext[i].upperLayerIn <-- netlink.out++;
+        }
+        for i=0..numTun-1 {
+            tun[i].upperLayerOut --> netlink.in++;
+            tun[i].upperLayerIn <-- netlink.out++;
+        }
+        for i=0..numVlan-1 {
+            vlan[i].upperLayerOut --> netlink.in++;
+            vlan[i].upperLayerIn <-- netlink.out++;
         }
 }
