@@ -1,3 +1,9 @@
 # FinalYearProject2020
 
-This is the simulation part of the project of what a DSRC received message data translated into a Wi-Fi UDP message packet and transmission. 
+Hybrid communication between DSRC and WIFI.
+Tech Stack : Veins, Omnet++, SUMO, Inet
+
+Goal - obtain a hybrid communication environment of DSRC and WIFI.
+This is achieved by converting the UDP WIFI packets to DSRC BSM packets using built-in functions of DSRC RSU.
+
+
